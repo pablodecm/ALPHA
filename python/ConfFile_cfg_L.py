@@ -6,7 +6,7 @@ process = cms.Process("ALPHA")
 process.load("FWCore.MessageService.MessageLogger_cfi")
 process.MessageLogger.cerr.threshold = 'ERROR'
 
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(20) )
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(100) )
 
 # input
 process.source = cms.Source("PoolSource",
@@ -607,7 +607,7 @@ process.ntuple = cms.EDAnalyzer('Ntuple_L',
         photon2pt = cms.double(10.),
     ),
     jetSet = cms.PSet(
-        jets = cms.InputTag("slimmedJetsAK8"), #selectedPatJetsAK8PFCHSPrunedPacked
+        jets = cms.InputTag("slimmedJetsAK8"),#("slimmedJets"),# #selectedPatJetsAK8PFCHSPrunedPacked
         jetid = cms.int32(1), # 0: no selection, 1: loose, 2: medium, 3: tight
         jet1pt = cms.double(20.),
         jet2pt = cms.double(20.),

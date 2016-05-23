@@ -72,8 +72,6 @@ Ntuple_L::~Ntuple_L() {
     delete theMuonAnalyzer;
     delete thePhotonAnalyzer;
     delete theJetAnalyzer;
-    //delete theZLepAnalyzer;//L
-    //delete theBTagAnalyzer;
     
 }
 
@@ -184,7 +182,7 @@ void Ntuple_L::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup) 
     isZLepSel = false;
     isZHadSel = false;
 
-    //ObjectsFormat::FillCandidateType(theZ, &theZ, isMC);//L
+    //Selections ZZ->2l2q for Z Lep
     if(theZ.mass()>55 && theZ.mass()<120 && theZ.pt()>100){
         isZLepSel = true;
     }
@@ -193,25 +191,46 @@ void Ntuple_L::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup) 
 
     //Dummy ZHad
     pat::CompositeCandidate theZHad;
+    //With AK4 Jets:
+    //if(JetsVect.size()>=2){
+    //if(JetsVect.at(0).pt()>30 && abs(JetsVect.at(0).eta())<2.5 && JetsVect.at(1).pt()>30 && abs(JetsVect.at(1).eta())<2.5){
+    //theZHad.addDaughter(JetsVect.at(0));
+    //theZHad.addDaughter(JetsVect.at(1));
+    //}
+    //}
+    //With AK8 Jets:
     if(JetsVect.size()>=1){
-        theZHad.addDaughter(JetsVect.at(0));
-        if(JetsVect.at(0).pt()>170 && abs(JetsVect.at(0).eta())<2.5){
-             isZHadSel = true;
-        }
+    if(JetsVect.at(0).pt()>170 && abs(JetsVect.at(0).eta())<2.5){
+    theZHad.addDaughter(JetsVect.at(0));
     }
-    AddFourMomenta addP4Had;
-    addP4Had.set(theZHad);
-    if(isZHadSel) std::cout << "LISA================== " << theZHad.mass() << std::endl;
+    }
+
+    //Selections for Z Had with AK8;
+    addP4.set(theZHad);
+    if(theZHad.mass()<180 && theZHad.numberOfDaughters()>0){
+         isZHadSel = true;
+    }
+    //Selections for Z Had with AK4
+    //if(theZHad.mass()>40 && theZHad.pt()>100){
+    //     isZHadSel = true;
+    //}
+
+    if(isZHadSel) std::cout << "Z Had mass " << theZHad.mass() << std::endl;
 
     if(isZLepSel && isZHadSel){
        theX.addDaughter(theZ);
        theX.addDaughter(theZHad);    
+       ZHad_mass = theZHad.mass();
+       ZHad_pt = theZHad.pt();
+       ZHad_eta = theZHad.eta();
+       ZHad_phi = theZHad.phi();
     }
+    addP4.set(theX);
 
     std::cout << " Invariant mass graviton " << theX.mass() <<std::endl;
     ObjectsFormat::FillCandidateType(ZLep, &theZ, isMC);//L
-    //ObjectsFormat::FillCandidateType(ZHad, &theZHad, isMC);//L
-    //ObjectsFormat::FillCandidateType(X, &theX, isMC);//L
+    //if(theZHad.numberOfDaughters()>0)ObjectsFormat::FillCandidateType(ZHad, &theZHad, isMC);//L
+    if(theX.numberOfDaughters()>1) ObjectsFormat::FillCandidateType(X, &theX, isMC);//L
 
 //    
 //    // Lepton and Trigger SF
@@ -292,7 +311,10 @@ void Ntuple_L::beginJob() {
     tree->Branch("X", &X, ObjectsFormat::ListCandidateType().c_str());//L
     tree->Branch("isZLepSel", &isZLepSel, "isZLepSel/O");//L
     tree->Branch("isZHadSel", &isZHadSel, "isZHadSel/O");//L
-    
+    tree->Branch("ZHad_mass", &ZHad_mass, "ZHad_mass/f");
+    tree->Branch("ZHad_pt", &ZHad_pt, "ZHad_pt/f");
+    tree->Branch("ZHad_eta", &ZHad_eta, "ZHad_eta/f");
+    tree->Branch("ZHad_phi", &ZHad_phi, "ZHad_phi/f");
 }
 
 // ------------ method called once each job just after ending the event loop  ------------

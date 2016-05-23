@@ -161,6 +161,15 @@ class Ntuple_L : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
         CandidateType ZLep;
         CandidateType ZHad;
         CandidateType X;
+        float ZHad_mass = -1.;
+        float ZHad_pt = -1.;
+        float ZHad_eta = -9.;
+        float ZHad_phi = -9.;
+        float X_mass;
+        float X_pt;
+        float X_eta;
+        float X_phi;
+
 };
 
 #endif
