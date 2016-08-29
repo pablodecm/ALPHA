@@ -146,7 +146,7 @@ void Diboson::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
     FacWeightUp = FacWeightDown = RenWeightUp = RenWeightDown = ScaleWeightUp = ScaleWeightDown = 1.;
     isZtoEE = isZtoMM = isTtoEM = isWtoEN = isWtoMN = isZtoNN = false;
     nPV = nElectrons = nMuons = nTaus = nPhotons = nJets = nFatJets = nBTagJets = 1;
-    nVetoElectrons = nLooseMuons = 0;
+    nVetoElectrons = nLooseElectrons = nLooseMuons = nTrackerHighPtMuons = 0;
     MaxJetBTag = MaxFatJetBTag = Chi2 = -1.;
     MinJetMetDPhi = 10.;
     massRecoilFormula = -1.;
@@ -216,16 +216,14 @@ void Diboson::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
     nElectrons = ElecVect.size();
     for(unsigned int i =0; i<ElecVect.size(); i++){
         if(ElecVect.at(i).userInt("isVeto")==1) nVetoElectrons++;
+        if(ElecVect.at(i).userInt("isLoose")==1) nLooseElectrons++;
     }
     // Muons
     std::vector<pat::Muon> MuonVect = theMuonAnalyzer->FillMuonVector(iEvent);
     nMuons = MuonVect.size();
-    std::vector<pat::Muon> LooseMuonVect;
     for(unsigned int i =0; i<MuonVect.size(); i++){
-        if(MuonVect.at(i).userInt("isLoose")==1){
-	    LooseMuonVect.push_back(MuonVect.at(i));
-            nLooseMuons++;
-	}
+        if(MuonVect.at(i).userInt("isLoose")==1) nLooseMuons++;
+        if(MuonVect.at(i).userInt("isTrackerHighPt")==1) nTrackerHighPtMuons++;
     }
     // Taus
     std::vector<pat::Tau> TauVect = theTauAnalyzer->FillTauVector(iEvent);
@@ -250,18 +248,35 @@ void Diboson::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
     // Missing Energy
     pat::MET MET = theJetAnalyzer->FillMetVector(iEvent);
     pat::MET Neutrino(MET);
+    //MET trigger efficiency for muons ad electrons
     float metNoMupx = MET.px();
     float metNoMupy = MET.py();
-    for(unsigned int i=0; i<LooseMuonVect.size();i++){
-      metNoMupx -= LooseMuonVect.at(i).px();
-      metNoMupy -= LooseMuonVect.at(i).py();
+    bool METtrigNoMu = false;
+    bool METtrig = false;
+    METtrigNoMu = TriggerMap["HLT_PFMETNoMu90_PFMHTNoMu90_IDTight_v"] || TriggerMap["HLT_PFMETNoMu120_PFMHTNoMu120_IDTight_v"];
+    METtrig = TriggerMap["HLT_PFMET170_NotCleaned_v"] || TriggerMap["HLT_PFMET170_NoiseCleaned_v"] || TriggerMap["HLT_PFMET170_JetIdCleaned_v"] || TriggerMap["HLT_PFMET170_HBHECleaned_v"] || TriggerMap["HLT_PFMET170_BeamHaloCleaned_v"];
+    if(nFatJets>0){
+        if(nMuons>0){
+          if(TriggerMap["HLT_Mu45_eta2p1_v"] && MuonVect.at(0).userInt("isTight") && MuonVect.at(0).userFloat("pfIso04")<0.15 && MuonVect.at(0).pt()>55){
+	      metNoMupx += MuonVect.at(0).px();
+	      metNoMupy += MuonVect.at(0).py();
+	      reco::Particle::LorentzVector metNoMup4(metNoMupx, metNoMupy, 0, sqrt(pow(metNoMupx,2) + pow(metNoMupy,2)) );
+	      MET.addUserFloat("ptNoMu",metNoMup4.pt());
+	      MET.addUserFloat("phiNoMu",metNoMup4.phi());
+	      Hist["a_mu_den_trig"]->Fill(MET.pt(), EventWeight);
+	      Hist["a_mu_den_trigNoMu"]->Fill(MET.userFloat("ptNoMu"), EventWeight);
+	      if(METtrigNoMu) Hist["a_mu_num_trigNoMu"]->Fill(MET.userFloat("ptNoMu"), EventWeight);
+	      if(METtrig) Hist["a_mu_num_trig"]->Fill(MET.pt(), EventWeight);
+          }
+        }
+        if(nElectrons>0){
+          if(TriggerMap["HLT_Ele27_WPLoose_Gsf_v"] && ElecVect.at(0).userInt("isTight") && ElecVect.at(0).pt()>55){
+	      Hist["a_ele_den_trig"]->Fill(MET.pt(), EventWeight);
+	      if(METtrig || METtrigNoMu) Hist["a_ele_num_trig"]->Fill(MET.pt(), EventWeight);
+          }
+        }
     }
-    reco::Particle::LorentzVector metNoMup4(metNoMupx, metNoMupy, 0, 0 );
-    MET.addUserFloat("metNoMu",metNoMup4.px());
-    MET.addUserFloat("phiNoMu",metNoMup4.phi());
-
     //theJetAnalyzer->ApplyRecoilCorrections(MET, &MET.genMET()->p4(), &theV.p4(), 0);
-    
     
     
     // -----------------------------------
@@ -295,7 +310,7 @@ void Diboson::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
 //    if(LheMap.find("lhePtW")!=LheMap.end()) WewkWeight = theGenAnalyzer->GetWewkWeight(LheMap["lhePtW"]);
     
     EventWeight *= ZewkWeight * WewkWeight;
-    
+   
     /*
 //        float genPtZ(-1.), genPtW(-1.);
 //    if(!genZ && genL1 && genL2) genPtZ = (!genZ) ? genZ->pt() : (*genL1 + *genL2).pt();
@@ -506,6 +521,7 @@ void Diboson::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
     // Categorization depending on the number of leptons
     
     // ---------- Z TO LEPTONS ----------
+    /*
     if(MuonVect.size()>=2 || ElecVect.size()>=2) {
         if(MuonVect.size()>=2 && ElecVect.size()>=2) {
             if(MuonVect.at(0).pt() > ElecVect.at(0).pt()) isZtoMM=true;
@@ -522,16 +538,18 @@ void Diboson::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
         else if(MuonVect.size()==1) isWtoMN=true;
         else {if(Verbose) std::cout << " - No Iso Leptons" << std::endl;}
     }
-    
+      
     // ----------- Z TO NEUTRINOS ---------------
     if(MET.pt() > 100.) {
         isZtoNN=true;
-        if(Verbose) std::cout << " - No charged leptons" << std::endl;
+        if(Verbose) std::cout << " - Possible Z inv candidate" << std::endl;
     }
 
-    if(isWtoEN || isWtoMN) {if(Verbose) std::cout << " - W->lnu candidate" << std::endl; return;}
-    if(not(isZtoEE || isZtoMM || isZtoNN || isWtoEN || isWtoMN)) {if(Verbose) std::cout << " - No V candidate" << std::endl; return;}
     
+    else {if(Verbose) std::cout << " - No V candidate" << std::endl; return;}
+    if(isWtoEN || isWtoMN) {if(Verbose) std::cout << " - W->lnu candidate" << std::endl; return;}
+    if(not(isZtoEE || isZtoMM || isZtoNN || isWtoEN || isWtoMN)) {if(Verbose) std::cout << " - No V candidate" << std::endl; return;}    
+    */
     Hist["a_nEvents"]->Fill(3., EventWeight);
     Hist["m_nEvents"]->Fill(8., EventWeight);
 //    if(isZtoEE) Hist["e_nEvents"]->Fill(3., EventWeight);
@@ -576,22 +594,26 @@ void Diboson::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
         }
         else { if(Verbose) std::cout << " - No OS electrons" << std::endl; return; }
     }*/
-    if(isZtoMM) {
+    float maxZpt(-1.);
+    if(MuonVect.size()>=2) {
         if(Verbose) std::cout << " - Try to reconstruct Z -> mm" << std::endl;
         // Indentify leptons
         int m1(-1), m2(-1);
-        float maxZpt(-1.);
+        //float maxZpt(-1.);
+	//std::cout << "max Zpt before mu cicle " << maxZpt << std::endl;
         for(unsigned int i = 0; i < MuonVect.size(); i++) {
             for(unsigned int j = 1; j < MuonVect.size(); j++) {
                 if(i==j || MuonVect[i].charge() == MuonVect[j].charge()) continue;
                 float Zpt = (MuonVect[i].p4() + MuonVect[j].p4()).pt();
+		//std::cout << " Zpt: " << Zpt << "with muons " << i << " and " << j << std::endl;
                 float Zmass = (MuonVect[i].p4() + MuonVect[j].p4()).mass();
-                if(Zmass > 70. && Zmass < 110. && Zpt > maxZpt) {m1 = i; m2 = j; maxZpt = Zpt;}
+		//std::cout << " Zmass: " << Zmass << "with muons " << i << " and " << j<< std::endl;
+                if(Zmass > 70. && Zmass < 110. && Zpt > maxZpt) {m1 = i; m2 = j; maxZpt = Zpt; isZtoMM = true;}//std::cout << "a good z in muons" << std::endl; std::cout << "new max z pt " << maxZpt << std::endl;}
             }
         }
         // Build candidate
-        if(m1 >= 0 && m2 >= 0) {
-            theV.addDaughter(MuonVect.at(m1).charge() < 0 ? MuonVect.at(m1) : MuonVect.at(m2));
+        if(m1 >= 0 && m2 >= 0 && isZtoMM) {
+	    theV.addDaughter(MuonVect.at(m1).charge() < 0 ? MuonVect.at(m1) : MuonVect.at(m2));
             theV.addDaughter(MuonVect.at(m1).charge() < 0 ? MuonVect.at(m2) : MuonVect.at(m1));
             addP4.set(theV);
             // SF
@@ -608,29 +630,34 @@ void Diboson::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
                 LeptonWeight *= theMuonAnalyzer->GetMuonIsoSF(MuonVect.at(m1), MuonPSet.getParameter<int>("muon1iso"));
                 LeptonWeight *= theMuonAnalyzer->GetMuonIsoSF(MuonVect.at(m2), MuonPSet.getParameter<int>("muon2iso"));
             }
-        }
-        else { if(Verbose) std::cout << " - No OS muons" << std::endl; return; }
+        //else { if(Verbose) std::cout << " - No OS muons" << std::endl; return; }
         // Clean-up muon collection
         pat::Muon Mu1 = MuonVect.at(m1), Mu2 = MuonVect.at(m2);
         MuonVect.clear();
         if(Mu1.pt() > Mu2.pt()) {MuonVect.push_back(Mu1); MuonVect.push_back(Mu2);}
         else {MuonVect.push_back(Mu2); MuonVect.push_back(Mu1);}
+	isZtoMM = true;
+        }
     }
-    else if(isZtoEE) {
+    if(ElecVect.size()>=2) {
         if(Verbose) std::cout << " - Try to reconstruct Z -> ee" << std::endl;
         // Indentify leptons
         int e1(-1), e2(-1);
-        float maxZpt(-1.);
+        //float maxZpt(-1.);
+	//std::cout << "max Zpt before ele cicle " << maxZpt << std::endl;
         for(unsigned int i = 0; i < ElecVect.size(); i++) {
             for(unsigned int j = 1; j < ElecVect.size(); j++) {
                 if(i==j || ElecVect[i].charge() == ElecVect[j].charge()) continue;
                 float Zpt = (ElecVect[i].p4() + ElecVect[j].p4()).pt();
+		//std::cout << " Zpt: " << Zpt << "with eles " << i << " and " << j << std::endl;
                 float Zmass = (ElecVect[i].p4() + ElecVect[j].p4()).mass();
-                if(Zmass > 70. && Zmass < 110. && Zpt > maxZpt) {e1 = i; e2 = j; maxZpt = Zpt;}
+		//std::cout << " Zmass: " << Zmass << "with eles " << i << " and " << j << std::endl;
+                if(Zmass > 70. && Zmass < 110. && Zpt > maxZpt) {e1 = i; e2 = j; maxZpt = Zpt; isZtoEE = true; isZtoMM = false;}// std::cout << "a good z in el" << std::endl; std::cout << "new max z pt " << maxZpt << std::endl;}
             }
         }
         // Build candidate
-        if(e1 >= 0 && e2 >= 0) {
+        if(e1 >= 0 && e2 >= 0 && isZtoEE && not(isZtoMM)) {
+            if(theV.numberOfDaughters()>0) theV.clearDaughters();
             theV.addDaughter(ElecVect.at(e1).charge() ? ElecVect.at(e1) : ElecVect.at(e2));
             theV.addDaughter(ElecVect.at(e1).charge() ? ElecVect.at(e2) : ElecVect.at(e1));
             addP4.set(theV);
@@ -646,14 +673,17 @@ void Diboson::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
                 LeptonWeight *= theElectronAnalyzer->GetElectronRecoEffSF(ElecVect.at(0));
                 LeptonWeight *= theElectronAnalyzer->GetElectronRecoEffSF(ElecVect.at(1));
             }
-        }
-        else { if(Verbose) std::cout << " - No OS electrons" << std::endl; return; }
+        //else { if(Verbose) std::cout << " - No OS electrons" << std::endl; return; }
         // Clean-up electron collection
         pat::Electron Ele1 = ElecVect.at(e1), Ele2 = ElecVect.at(e2);
         ElecVect.clear();
         if(Ele1.pt() > Ele2.pt()) {ElecVect.push_back(Ele1); ElecVect.push_back(Ele2);}
         else {ElecVect.push_back(Ele2); ElecVect.push_back(Ele1);}
+        isZtoEE = true;
+        isZtoMM = false;
+        }
     }
+    /*
     else if(isTtoEM) {
         if(Verbose) std::cout << " - Try to reconstruct TT -> enmn" << std::endl;
         theV.addDaughter(MuonVect.at(0));
@@ -689,13 +719,19 @@ void Diboson::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
             LeptonWeight *= theElectronAnalyzer->GetElectronRecoEffSF(ElecVect.at(0));
         }
     }
-    else if(isZtoNN) {
-        if(Verbose) std::cout << " - Try to reconstruct Z -> nn" << std::endl;
-        theV.addDaughter(MET);
-        addP4.set(theV);
+    */
+    if(not(isZtoEE) && not(isZtoMM)) {
+        if(MET.pt() > 100.) {
+            isZtoNN=true;
+            //if(Verbose) std::cout << " - Possible Z inv candidate" << std::endl;    
+            if(Verbose) std::cout << " - Try to reconstruct Z -> nn" << std::endl;
+            if(theV.numberOfDaughters()>0) theV.clearDaughters();
+            theV.addDaughter(MET);
+            addP4.set(theV);
+        }
     }
     
-    else { if(Verbose) std::cout << " - No reconstructible V candidate" << std::endl; return; }
+    if(not(isZtoNN) && not(isZtoEE) && not(isZtoMM)) { if(Verbose) std::cout << " - No reconstructible V candidate" << std::endl; return; }
     // Update event weight with lepton selections
     EventWeight *= LeptonWeight;
     
@@ -718,7 +754,7 @@ void Diboson::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
         if(abs(MuonVect.at(0).eta())<1.1 && abs(MuonVect.at(1).eta())>1.1) Hist["m_ZmassBE"]->Fill(theV.mass(), EventWeight);
         if(abs(MuonVect.at(0).eta())>1.1 && abs(MuonVect.at(1).eta())>1.1) Hist["m_ZmassEE"]->Fill(theV.mass(), EventWeight);
     }
-    
+
     // -----------------------------------
     //           HADRONIC BOSON
     // -----------------------------------
@@ -1051,6 +1087,7 @@ void Diboson::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup) {
     // ---------- Print Summary ----------
     if(Verbose) {
         std::cout << " --- Event n. " << iEvent.id().event() << ", lumi " << iEvent.luminosityBlock() << ", run " << iEvent.id().run() << ", weight " << EventWeight << std::endl;
+        std::cout << "isZtoEE: " << isZtoEE << ", is ZtoMM: " << isZtoMM << ", isZtoNN: " << isZtoNN << std::endl;
         std::cout << "number of electrons: " << ElecVect.size() << std::endl;
         for(unsigned int i = 0; i < ElecVect.size(); i++) std::cout << "  electron [" << i << "]\tpt: " << ElecVect[i].pt() << "\teta: " << ElecVect[i].eta() << "\tphi: " << ElecVect[i].phi() << "\tmass: " << ElecVect[i].mass() << "\tcharge: " << ElecVect[i].charge() << std::endl;
         std::cout << "number of muons:     " << MuonVect.size() << std::endl;
@@ -1265,8 +1302,10 @@ void Diboson::beginJob() {
     tree->Branch("nPV", &nPV, "nPV/I");
     tree->Branch("nElectrons", &nElectrons, "nElectrons/I");
     tree->Branch("nVetoElectrons", &nVetoElectrons, "nVetoElectrons/I");
+    tree->Branch("nLooseElectrons", &nLooseElectrons, "nLooseElectrons/I");
     tree->Branch("nMuons", &nMuons, "nMuons/I");
     tree->Branch("nLooseMuons", &nLooseMuons, "nLooseMuons/I");
+    tree->Branch("nTrackerHighPtMuons", &nTrackerHighPtMuons, "nTrackerHighPtMuons/I");
     tree->Branch("nTaus", &nTaus, "nTaus/I");
     tree->Branch("nPhotons", &nPhotons, "nPhotons/I");
     tree->Branch("nJets", &nJets, "nJets/I");

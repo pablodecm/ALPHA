@@ -160,7 +160,7 @@ class Diboson : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
         long int EventNumber, RunNumber, LumiNumber;
         float EventWeight, StitchWeight, ZewkWeight, WewkWeight, PUWeight, TriggerWeight, LeptonWeight;
         float FacWeightUp, FacWeightDown, RenWeightUp, RenWeightDown, ScaleWeightUp, ScaleWeightDown;
-        int nPV, nElectrons, nVetoElectrons, nMuons, nLooseMuons, nTaus, nPhotons, nJets, nFatJets, nBTagJets;
+        int nPV, nElectrons, nVetoElectrons, nLooseElectrons, nMuons, nLooseMuons, nTrackerHighPtMuons, nTaus, nPhotons, nJets, nFatJets, nBTagJets;
         float MaxJetBTag, MaxFatJetBTag, MinJetMetDPhi, Chi2;
         // Angular
         float CosThetaStar, CosTheta1, CosTheta2, Phi, Phi1, AngularLD;

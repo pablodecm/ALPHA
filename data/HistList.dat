@@ -36,6 +36,16 @@ a_HMass_HPt             ;m_{H}~[GeV]                              100     0  100
 a_HMass_PM              ;m_{H}~[GeV]                              100     0  1000   Lin
 a_HAK8Mass              ;m_{AK8~jet}~[GeV]                        100     0  1000   Lin
 a_HAK4Mass              ;m_{AK4~jets}~[GeV]                       100     0  1000   Lin
+a_mu_num_trig           ;met                                      200     0  2000   Lin
+a_mu_den_trig           ;met                                      200     0  2000   Lin
+a_mu_num_trigNoMu       ;metNoMu                                  200     0  2000   Lin
+a_mu_den_trigNoMu       ;metNoMu                                  200     0  2000   Lin
+a_ele_num_trig          ;met                                      200     0  2000   Lin
+a_ele_den_trig          ;met                                      200     0  2000   Lin
+a_met                   ;met                                      200   100  2000   Lin
+a_metNoMu               ;metNoMu                                  200   100  2000   Lin
+a_nLooseMuons           ;nLooseMuons                                6     0     6   Lin
+a_mod_met               ;mod_met                                    2     0     2   Lin
 g_nPartons              ;nPartons                                   8  -0.5   7.5   Log
 g_nBPartons             ;nBPartons                                  5  -0.5   4.5   Log
 g_nPtZ                  ;Gen~Z~p_{T}                                5     0   250   Log

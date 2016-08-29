@@ -533,6 +533,8 @@ void ObjectsFormat::FillMEtType(MEtType& I, const pat::MET* R, bool isMC) {
     I.ptScaleDown = R->hasUserFloat("ptScaleDown") ? R->userFloat("ptScaleDown") : -1.;
     I.ptResUp     = R->hasUserFloat("ptResUp") ? R->userFloat("ptResUp") : -1.;
     I.ptResDown   = R->hasUserFloat("ptResDown") ? R->userFloat("ptResDown") : -1.;
+    I.ptNoMu      = R->hasUserFloat("ptNoMu") ? R->userFloat("ptNoMu") : -1.;
+    I.phiNoMu     = R->hasUserFloat("phiNoMu") ? R->userFloat("phiNoMu") : -9.;
 }
 
 void ObjectsFormat::ResetMEtType(MEtType& I) {
@@ -550,9 +552,11 @@ void ObjectsFormat::ResetMEtType(MEtType& I) {
     I.ptScaleDown = -1.;
     I.ptResUp     = -1.;
     I.ptResDown   = -1.;
+    I.ptNoMu      = -1.;
+    I.phiNoMu     = -9.;
 }
 
-std::string ObjectsFormat::ListMEtType() {return "pt/F:eta/F:phi/F:sign/F:ptRaw/F:phiRaw/F:ptType1/F:phiType1/F:ptGen/F:phiGen/F:ptScaleUp/F:ptScaleDown/F:ptResUp/F:ptResDown/F";}
+std::string ObjectsFormat::ListMEtType() {return "pt/F:eta/F:phi/F:sign/F:ptRaw/F:phiRaw/F:ptType1/F:phiType1/F:ptGen/F:phiGen/F:ptScaleUp/F:ptScaleDown/F:ptResUp/F:ptResDown/F:ptNoMu/F:phiNoMu/F";}
 
 
 
@@ -584,6 +588,8 @@ void ObjectsFormat::FillMEtFullType(MEtFullType& I, const pat::MET* R, bool isMC
     I.elf         = R->ChargedEMEtFraction();
     I.chf         = R->ChargedHadEtFraction();
     I.muf         = R->MuonEtFraction();
+    I.ptNoMu      = R->hasUserFloat("ptNoMu") ? R->userFloat("ptNoMu") : -1.;
+    I.phiNoMu     = R->hasUserFloat("phiNoMu") ? R->userFloat("phiNoMu") : -9.;
 }
 
 void ObjectsFormat::ResetMEtFullType(MEtFullType& I) {
@@ -614,9 +620,11 @@ void ObjectsFormat::ResetMEtFullType(MEtFullType& I) {
     I.elf         = -1.;
     I.chf         = -1.;
     I.muf         = -1.;
+    I.ptNoMu      = -1.;
+    I.phiNoMu     = -9.;
 }
 
-std::string ObjectsFormat::ListMEtFullType() {return "pt/F:eta/F:phi/F:sign/F:ptRaw/F:phiRaw/F:ptGen/F:phiGen/F:ptJERUp/F:ptJERDown/F:ptJESUp/F:ptJESDown/F:ptMUSUp/F:ptMUSDown/F:ptELSUp/F:ptELSDown/F:ptTAUUp/F:ptTAUDown/F:ptUNCUp/F:ptUNCDown/F:ptPHOUp/F:ptPHODown/F:phf/F:nhf/F:elf/F:chf/F:muf/F";}
+std::string ObjectsFormat::ListMEtFullType() {return "pt/F:eta/F:phi/F:sign/F:ptRaw/F:phiRaw/F:ptGen/F:phiGen/F:ptJERUp/F:ptJERDown/F:ptJESUp/F:ptJESDown/F:ptMUSUp/F:ptMUSDown/F:ptELSUp/F:ptELSDown/F:ptTAUUp/F:ptTAUDown/F:ptUNCUp/F:ptUNCDown/F:ptPHOUp/F:ptPHODown/F:phf/F:nhf/F:elf/F:chf/F:muf/F:ptNoMu/F:phiNoMu/F";}
 
 
 void ObjectsFormat::FillCandidateType(CandidateType& I, pat::CompositeCandidate* R, bool isMC) {
