@@ -9,7 +9,8 @@ import sys
 
 options = VarParsing ('analysis')
 options.register ('tCut', 0, options.multiplicity.singleton, options.varType.int,
-                  "Trigger cut on/off")
+                  "Trigger cut on/off"
+                  )
 options.parseArguments()
 
 # Determine sample name for MC stitching
@@ -21,7 +22,9 @@ process = cms.Process('ALPHA')
 process.load('FWCore.MessageService.MessageLogger_cfi')
 process.MessageLogger.cerr.threshold = 'ERROR'
 
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
+# max number of events
+# parse argument 'maxEvents=xx'. default is all events.
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(options.maxEvents) )
 
 # input
 # default: if no filelist from command line, run on specified samples
